@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Doubt Portal</title>
+</head>
+<style>
+body {
+    font-family: 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #7cf4ff, #86ccff);
+    margin: 0;
+    min-height: 100vh;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+
+    padding-top: 60px;
+}
+
+
+button {
+    background: white;
+    color: black;
+    border: none;
+     background: linear-gradient(135deg, #ff57ff, #4f7cff);
+    font-size: 25px;
+    border-radius: 20px;
+    cursor: pointer;
+}
+
+button:hover {
+    transform: scale(1.05);
+}
+
+h1 {
+    font-size: 60px;
+    margin-bottom: 30px;
+}
+
+h2 {
+    font-size: 40px;
+    margin-bottom: 40px;
+}
+/* INPUTS */
+input, select {
+    width: 90%;
+    padding: 20px;
+    margin: 10px 0;
+    border-radius: 14px;
+    border: 1px solid #dce3f0;
+    background: #f9fbff;
+    font-size: 15px;
+}
+.doubt-card {
+    width: 80%;
+    max-width: 800px;
+
+    border-radius: 20px;
+     padding: 50px 100px;
+    margin: 50px auto;
+
+    background: white;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+
+    font-size: 20px;
+    line-height: 1.6;
+}
+.doubt-card b {
+    font-size: 22px;
+}
+
+</style>
+
+<body>
+
+<h2>Ask Your Doubt (Anonymous)</h2>
+
+<input id="question" placeholder="Type your doubt here"></textarea>
+<br><br>
+
+<button onclick="submitDoubt()">Submit Doubt</button>
+
+<hr>
+
+<h2>All Doubts</h2>
+
+<div id="doubtsList"></div>
+
+<script>
+
+async function submitDoubt() {
+
+    const question = document.getElementById("question").value;
+
+    await fetch("http://127.0.0.1:8000/add_doubt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: question })
+    });
+
+    loadDoubts();
+}
+
+async function loadDoubts() {
+
+    const response = await fetch("http://127.0.0.1:8000/get_doubts");
+    const data = await response.json();
+
+    let html = "";
+
+    data.forEach(d => {
+
+        let answerSection = "";
+
+        if (d.answer) {
+            answerSection = `<b>Answer:</b> ${d.answer}`;
+        } else {
+            answerSection = `
+                <button onclick="openAnswerBox(${d.id})">Answer Doubt</button>
+
+                <div id="answerBox-${d.id}" style="display:none; margin-top:10px;">
+                    <input type="text" id="answerInput-${d.id}" placeholder="Type your answer">
+                    <button onclick="submitAnswer(${d.id})">Submit</button>
+                </div>
+            `;
+        }
+
+        html += `
+        <div class="doubt-card">
+            <b>Question:</b> ${d.question} <br>
+            ${answerSection}
+        </div>
+        `;
+    });
+
+    document.getElementById("doubtsList").innerHTML = html;
+}
+function openAnswerBox(doubtId) {
+    document.getElementById("answerBox-" + doubtId).style.display = "block";
+}
+async function submitAnswer(doubtId) {
+
+    const answer = document.getElementById("answerInput-" + doubtId).value;
+
+    await fetch("http://127.0.0.1:8000/answer_doubt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            doubt_id: doubtId,
+            answer: answer
+        })
+    });
+
+    loadDoubts();
+}
+loadDoubts();
+</script>
+</body>
+</html>
